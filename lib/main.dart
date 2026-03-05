@@ -259,11 +259,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     Card(
                       elevation: 4,
                       clipBehavior: Clip.antiAlias,
-                      child: Image.asset(
-                        'assets/images/village_stroumpf.jpg',
-                        height: 200,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
+                      child: Semantics(
+                        label: 'Village des Schtroumpfs',
+                        child: Image.asset(
+                          'assets/images/village_stroumpf.jpg',
+                          height: 200,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                     const SizedBox(height: _S.l),
@@ -438,11 +441,11 @@ class GameResult {
   };
 
   String get profileEmoji => switch (profile) {
-    AttentionProfile.typical => '???',
-    AttentionProfile.highVariability => '????',
-    AttentionProfile.inattention => '????',
-    AttentionProfile.impulsivity => '???',
-    AttentionProfile.mixed => '????',
+    AttentionProfile.typical => '\u2B50',
+    AttentionProfile.highVariability => '\u{1F3AF}',
+    AttentionProfile.inattention => '\u{1F50D}',
+    AttentionProfile.impulsivity => '\u26A1',
+    AttentionProfile.mixed => '\u{1F300}',
   };
 
   String get kidMessage => switch (profile) {
@@ -613,10 +616,10 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       _reactionTimes.add(DateTime.now().difference(stim.shownAt).inMicroseconds / 1000.0);
       _bounceCtrl.reverse();
       HapticFeedback.lightImpact();
-      _showFeedback('???', Colors.green);
+      _showFeedback('\u2714', Colors.green);
     } else {
       HapticFeedback.heavyImpact();
-      _showFeedback('???', Colors.red);
+      _showFeedback('\u2718', Colors.red);
     }
   }
 
@@ -674,8 +677,15 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     final progress = _currentRound / totalRounds;
 
     return Scaffold(
-      backgroundColor: cs.surface,
-      body: SafeArea(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [cs.primaryContainer.withValues(alpha: 0.15), cs.surface],
+          ),
+        ),
+        child: SafeArea(
         child: GestureDetector(
           onTap: _onTap,
           behavior: HitTestBehavior.opaque,
@@ -751,7 +761,10 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                               height: 200,
                               child: _currentStimulus == null
                                   ? const SizedBox.shrink()
-                                  : Image.asset(_currentStimulus!.asset, height: 200, fit: BoxFit.contain),
+                                  : Semantics(
+                      label: _currentStimulus!.type == StimulusType.house ? 'Maison' : 'Schtroumpf',
+                      child: Image.asset(_currentStimulus!.asset, height: 200, fit: BoxFit.contain),
+                    ),
                             ),
                           ),
                           if (_feedbackIcon != null)
@@ -783,6 +796,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           ),
         ),
       ),
+      ),
     );
   }
 }
@@ -804,15 +818,24 @@ class _ResultScreenState extends State<ResultScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: cs.surface,
-      body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: _Anim.standard,
-          switchInCurve: _Anim.enter,
-          switchOutCurve: _Anim.exit,
-          child: _parentMode
-              ? _ParentView(key: const ValueKey('p'), result: widget.result, onBack: () => setState(() => _parentMode = false))
-              : _KidView(key: const ValueKey('k'), result: widget.result, onParentMode: () => setState(() => _parentMode = true)),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [cs.primaryContainer.withValues(alpha: 0.2), cs.surface],
+            stops: const [0.0, 0.4],
+          ),
+        ),
+        child: SafeArea(
+          child: AnimatedSwitcher(
+            duration: _Anim.standard,
+            switchInCurve: _Anim.enter,
+            switchOutCurve: _Anim.exit,
+            child: _parentMode
+                ? _ParentView(key: const ValueKey('p'), result: widget.result, onBack: () => setState(() => _parentMode = false))
+                : _KidView(key: const ValueKey('k'), result: widget.result, onParentMode: () => setState(() => _parentMode = true)),
+          ),
         ),
       ),
     );
@@ -915,9 +938,14 @@ class _KidViewState extends State<_KidView> with SingleTickerProviderStateMixin 
               ],
             ),
             const SizedBox(height: _S.l),
-            TextButton(
+            OutlinedButton.icon(
               onPressed: widget.onParentMode,
-              child: Text('Vue parent', style: tt.bodySmall?.copyWith(color: cs.outline)),
+              icon: Icon(Icons.insights_rounded, size: 18, color: cs.outline),
+              label: Text('Voir les details (parents)', style: tt.labelLarge?.copyWith(color: cs.outline)),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: cs.outlineVariant),
+                padding: const EdgeInsets.symmetric(horizontal: _S.l, vertical: _S.m),
+              ),
             ),
           ],
         ),
@@ -940,6 +968,7 @@ class _ParentView extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
 
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(_S.m + _S.xs),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -948,6 +977,7 @@ class _ParentView extends StatelessWidget {
             IconButton(
               onPressed: onBack,
               icon: Icon(Icons.arrow_back_rounded, color: cs.primary),
+              tooltip: 'Retour',
               constraints: const BoxConstraints(minWidth: _S.xxl, minHeight: _S.xxl),
             ),
             const SizedBox(width: _S.s),
@@ -980,23 +1010,23 @@ class _ParentView extends StatelessWidget {
           const SizedBox(height: _S.s),
 
           _Section('Temps de reaction'),
-          _DataCard(icon: '???', label: 'RT moyen',
+          _DataCard(icon: '\u23F1', label: 'RT moyen',
             value: '${result.meanRtMs > 0 ? result.meanRtMs.toStringAsFixed(0) : "--"} ms',
             subtitle: '${result.rtCategory}  |  Norme ~655ms, TDAH ~734ms',
             highlight: result.meanRtMs > 734 && result.meanRtMs > 0),
           const SizedBox(height: _S.s),
-          _DataCard(icon: '????', label: 'Variabilite (IIV)',
+          _DataCard(icon: '\u{1F4CA}', label: 'Variabilite (IIV)',
             value: '${result.sdRtMs > 0 ? result.sdRtMs.toStringAsFixed(0) : "--"} ms',
             subtitle: '${result.variabilityCategory}  |  Norme ~204ms, TDAH >=250ms',
             highlight: result.sdRtMs >= 250),
           const SizedBox(height: _S.s),
 
           _Section('Erreurs'),
-          _DataCard(icon: '????', label: 'Omissions',
+          _DataCard(icon: '\u{1F441}', label: 'Omissions',
             value: '${result.misses}/${result.totalTargets}  (${(result.omissionRate * 100).toStringAsFixed(0)}%)',
             subtitle: 'Seuil : >=30% = inattention', highlight: result.omissionRate >= 0.30),
           const SizedBox(height: _S.s),
-          _DataCard(icon: '???', label: 'Commissions',
+          _DataCard(icon: '\u26A1', label: 'Commissions',
             value: '${result.falseAlarms}  (${(result.commissionRate * 100).toStringAsFixed(0)}%)',
             subtitle: 'Seuil : >=25% = impulsivite', highlight: result.commissionRate >= 0.25),
           const SizedBox(height: _S.l),
@@ -1609,6 +1639,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ]),
             ))
           : ListView.builder(
+              physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.all(_S.m),
               itemCount: _history.length,
               itemBuilder: (_, i) {
